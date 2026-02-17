@@ -712,6 +712,30 @@
       }, 800); // Auto-send after 800ms of no typing
     });
 
+    // Auto-read clipboard when app comes into focus
+    document.addEventListener('visibilitychange', async () => {
+      if (document.visibilityState === 'visible') {
+        try {
+          // Check permissions first
+          const perm = await navigator.permissions.query({ name: 'clipboard-read' });
+          if (perm.state === 'granted' || perm.state === 'prompt') {
+            const t = await navigator.clipboard.readText();
+            const currentInput = document.getElementById('clipText').value;
+            // Only auto-send if it's new content
+            if (t && t !== lastSent && t !== currentInput) {
+              document.getElementById('clipText').value = t;
+              updateCount();
+              sendClip();
+              showToast('⚡ Auto-synced from phone clipboard', 'ok');
+            }
+          }
+        } catch (e) {
+          // Browser blocked it, that's fine, user will tap Paste
+          console.log('Auto-read blocked:', e);
+        }
+      }
+    });
+
     async function pasteFromPhone() {
       try {
         const t = await navigator.clipboard.readText();
@@ -720,7 +744,7 @@
         showToast('Pasted — Sending...', 'ok');
         sendClip();
       }
-      catch { showToast('Allow clipboard in Chrome', 'err'); }
+      catch { showToast('Tap "Allow" if asked, or tap again', 'err'); }
     }
 
     async function copyToPhone() {
