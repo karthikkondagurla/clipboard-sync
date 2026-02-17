@@ -7,6 +7,10 @@ const http = require('http');
 const PORT = process.env.PORT || 8080;
 
 const server = http.createServer((req, res) => {
+  // Enable CORS so the mobile app can test connection health
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET');
+
   if (req.url === '/health') {
     res.writeHead(200);
     res.end('ClipSync Server Running ✓');
