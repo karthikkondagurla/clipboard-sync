@@ -28,7 +28,8 @@ CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".clipsync_config.json")
 def load_config():
     defaults = {
         "server": "wss://clipboard-sync-production-a76a.up.railway.app",
-        "room": "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
+        "room": "".join(random.choices(string.ascii_uppercase + string.digits, k=6)),
+        "use_ngrok": True
     }
     if os.path.exists(CONFIG_FILE):
         try:
@@ -103,6 +104,52 @@ def on_error(ws, error):
 
 def connect():
     global ws_app, ws_conn
+    
+    # Setup ngrok tunnel
+    try:
+        from pyngrok import ngrok, conf
+        if config.get("use_ngrok", False):
+            # Kill existing tunnels
+            ngrok.kill()
+            
+            # Try connecting
+            try:
+                tunnel = ngrok.connect(8080, bind_tls=True)
+            except Exception as e:
+                # Check for auth error
+                if "ERR_NGROK_4018" in str(e) or "authentication" in str(e).lower():
+                    print("[ClipSync] Ngrok requires authentication.")
+                    import tkinter as tk
+                    from tkinter import simpledialog
+                    import webbrowser
+                    
+                    root = tk.Tk()
+                    root.withdraw()
+                    
+                    # Offer to open dashboard
+                    webbrowser.open("https://dashboard.ngrok.com/get-started/your-authtoken")
+                    
+                    token = simpledialog.askstring(
+                        "Ngrok Authentication",
+                        "Ngrok requires a free account.\n\n1. A browser window has opened.\n2. Login/Sign up to ngrok.\n3. Copy your Authtoken.\n\nPaste your Authtoken here:"
+                    )
+                    root.destroy()
+                    
+                    if token:
+                        ngrok.set_auth_token(token)
+                        tunnel = ngrok.connect(8080, bind_tls=True)
+                    else:
+                        raise Exception("Ngrok auth token required")
+                else:
+                    raise e
+
+            new_url = tunnel.public_url.replace("https://", "wss://")
+            print(f"[ClipSync] Ngrok tunnel started: {new_url}")
+            config["server"] = new_url
+            save_config(config)
+    except Exception as e:
+        print(f"[ClipSync] Ngrok error: {e}")
+
     while True:
         try:
             ws_app = websocket.WebSocketApp(
@@ -285,6 +332,17 @@ def main():
     # Start WebSocket connection thread
     ws_thread = threading.Thread(target=connect, daemon=True)
     ws_thread.start()
+
+    # Start local server if using ngrok
+    if config.get("use_ngrok", False):
+        import subprocess
+        print("[ClipSync] Starting local Node.js server...")
+        # Check if node is installed
+        try:
+            subprocess.Popen(["node", "server.js"], shell=True)
+        except Exception as e:
+            print(f"[ClipSync] Failed to start local server: {e}")
+
 
     # Start clipboard watcher thread
     clip_thread = threading.Thread(target=watch_clipboard, daemon=True)

@@ -10,6 +10,9 @@
   <link
     href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap"
     rel="stylesheet" />
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
   <style>
     *,
     *::before,
@@ -563,6 +566,15 @@
 
   <div class="toast" id="toast"></div>
 
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('SW registered'))
+          .catch(err => console.log('SW failed', err));
+      });
+    }
+  </script>
   <script>
     let ws = null, currentRoom = null, connected = false;
     let serverUrl = localStorage.getItem('cs_server') || 'wss://clipboard-sync-production-a76a.up.railway.app';
