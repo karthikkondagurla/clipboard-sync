@@ -71,17 +71,27 @@ wss.on('connection', (ws) => {
     }
 
     if (type === 'clipboard') {
-      const currentRoom = getRoomCode(ws);
+      let currentRoom = getRoomCode(ws);
+
+      // Fallback: If server lost track of this socket, trust the message's room
+      if (!currentRoom && msg.room) {
+        console.log(`Socket not in room, auto-joining ${msg.room}`);
+        currentRoom = msg.room;
+        if (!rooms.has(currentRoom)) rooms.set(currentRoom, new Set());
+        rooms.get(currentRoom).add(ws);
+      }
+
       if (!currentRoom) return;
 
       // Broadcast to all OTHER devices in the room
-      rooms.get(currentRoom).forEach((client) => {
-        if (client !== ws && client.readyState === WebSocket.OPEN) {
-          client.send(JSON.stringify({ type: 'clipboard', payload, from: msg.from }));
-        }
-      });
-
-      console.log(`Clipboard sync in room ${currentRoom}: ${String(payload).substring(0, 50)}...`);
+      if (rooms.has(currentRoom)) {
+        rooms.get(currentRoom).forEach((client) => {
+          if (client !== ws && client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify({ type: 'clipboard', payload: msg.payload, from: msg.from }));
+          }
+        });
+        console.log(`Clipboard sync in room ${currentRoom}: ${String(msg.payload).substring(0, 50)}...`);
+      }
     }
 
     if (type === 'ping') {
