@@ -624,19 +624,50 @@
     function connectWS() {
       if (ws) { ws.close(); ws = null; } clearTimeout(reconnectTimer);
       setStatus('connecting'); setMeta('Connecting…');
-      try { ws = new WebSocket(serverUrl); } catch (e) { setStatus('offline'); showToast('Bad server URL', 'err'); return; }
-      ws.onopen = () => ws.send(JSON.stringify({ type: 'join', room: currentRoom }));
+
+      try { ws = new WebSocket(serverUrl); } catch (e) {
+        setStatus('offline');
+        showToast('Bad URL', 'err');
+        return;
+      }
+
+      ws.onopen = () => {
+        ws.send(JSON.stringify({ type: 'join', room: currentRoom }));
+        // Keep-alive ping every 10s
+        if (ws.pingInterval) clearInterval(ws.pingInterval);
+        ws.pingInterval = setInterval(() => {
+          if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'ping' }));
+        }, 10000);
+      };
+
       ws.onmessage = (e) => {
         const msg = JSON.parse(e.data);
         if (msg.type === 'joined') { connected = true; setStatus('connected'); setMeta(`Room <b>${currentRoom}</b>`, msg.devices); showToast(`Joined ${currentRoom}`, 'ok'); }
         if (msg.type === 'device_joined' || msg.type === 'device_left') { setMeta(`Room <b>${currentRoom}</b>`, msg.devices); showToast(msg.type === 'device_joined' ? '💻 Laptop connected' : 'Device left'); }
         if (msg.type === 'clipboard') receiveClip(msg.payload, msg.from || 'laptop');
+        if (msg.type === 'pong') { /* Connection active */ }
       };
-      ws.onclose = () => { connected = false; setStatus('offline'); setMeta('Disconnected — retrying…'); reconnectTimer = setTimeout(() => { if (currentRoom) connectWS(); }, 4000); };
-      ws.onerror = () => { setStatus('error'); showToast('Connection failed', 'err'); };
+
+      ws.onclose = () => {
+        connected = false;
+        setStatus('offline');
+        setMeta('Disconnected — retrying…');
+        if (ws.pingInterval) clearInterval(ws.pingInterval);
+        // Aggressive reconnect: 1s, then 2s, then 4s...
+        const delay = Math.min(1000 * (reconnectAttempts + 1), 5000);
+        reconnectTimer = setTimeout(() => {
+          reconnectAttempts++;
+          if (currentRoom) connectWS();
+        }, delay);
+      };
+
+      ws.onerror = () => { ws.close(); };
     }
 
+    let reconnectAttempts = 0;
+
     function setStatus(s) {
+      if (s === 'connected') reconnectAttempts = 0;
       const pill = document.getElementById('statusPill'), text = document.getElementById('statusText');
       pill.className = 'status-pill';
       const m = { connected: ['connected', 'live'], error: ['error', 'error'], connecting: ['', '…'], offline: ['', 'offline'] };
