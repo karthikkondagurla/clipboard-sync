@@ -690,8 +690,24 @@
       addHistory(text, 'sent'); showToast('Sent ↑', 'ok');
     }
 
+    let sendTimer;
+    document.getElementById('clipText').addEventListener('input', () => {
+      updateCount();
+      clearTimeout(sendTimer);
+      sendTimer = setTimeout(() => {
+        const text = document.getElementById('clipText').value.trim();
+        if (text && text !== lastSent) sendClip();
+      }, 800); // Auto-send after 800ms of no typing
+    });
+
     async function pasteFromPhone() {
-      try { const t = await navigator.clipboard.readText(); document.getElementById('clipText').value = t; updateCount(); showToast('Pasted'); }
+      try {
+        const t = await navigator.clipboard.readText();
+        document.getElementById('clipText').value = t;
+        updateCount();
+        showToast('Pasted — Sending...', 'ok');
+        sendClip();
+      }
       catch { showToast('Allow clipboard in Chrome', 'err'); }
     }
 
@@ -711,6 +727,7 @@
       const tag = document.getElementById('receivedTag');
       tag.textContent = `Received from ${from}`; tag.classList.add('show');
       setTimeout(() => tag.classList.remove('show'), 3000);
+      // Try to auto-copy if the browser allows (often blocked without gesture)
       navigator.clipboard.writeText(text).catch(() => { });
       addHistory(text, 'received'); showToast('↓ Received');
     }
