@@ -274,7 +274,7 @@
       </div>
       <button class="server-toggle" onclick="toggleServer()">⚙ server <span id="sArrow">›</span></button>
       <div class="server-panel" id="serverPanel">
-        <input class="server-input" id="serverUrl" placeholder="wss://your-server.up.railway.app"/>
+        <input class="server-input" id="serverUrl" placeholder="wss://clipboard-sync-production-a76a.up.railway.app"/>
         <button class="btn btn-sm" onclick="saveServer()">Save</button>
       </div>
     </div>
@@ -307,7 +307,7 @@
 
 <script>
 let ws=null, currentRoom=null, connected=false;
-let serverUrl=localStorage.getItem('cs_server')||'wss://your-server.up.railway.app';
+let serverUrl=localStorage.getItem('cs_server')||'wss://clipboard-sync-production-a76a.up.railway.app';
 let lastSent='', reconnectTimer=null, history=[];
 
 document.getElementById('serverUrl').value = serverUrl;

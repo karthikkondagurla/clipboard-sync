@@ -27,7 +27,7 @@ CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".clipsync_config.json")
 
 def load_config():
     defaults = {
-        "server": "wss://your-server.up.railway.app",
+        "server": "wss://clipboard-sync-production-a76a.up.railway.app",
         "room": "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
     }
     if os.path.exists(CONFIG_FILE):
