@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+<meta name="theme-color" content="#f7f7f5"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<title>ClipSync</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f4f4f1;
+    --white: #ffffff;
+    --border: #e4e4df;
+    --border2: #ccccc6;
+    --text: #1c1c1a;
+    --muted: #8f8f89;
+    --accent: #2563eb;
+    --accent-light: #eff6ff;
+    --accent-border: #bfdbfe;
+    --success: #16a34a;
+    --success-light: #f0fdf4;
+    --danger: #dc2626;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .app { flex: 1; display: flex; flex-direction: column; max-width: 480px; margin: 0 auto; width: 100%; }
+
+  header {
+    background: var(--white);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 10;
+  }
+
+  .logo { display: flex; align-items: center; gap: 9px; }
+  .logo-mark {
+    width: 30px; height: 30px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+  }
+  .logo-text { font-size: 17px; font-weight: 600; color: var(--text); letter-spacing: -0.4px; }
+
+  .status-pill {
+    display: flex; align-items: center; gap: 5px;
+    padding: 5px 11px;
+    border-radius: 100px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    font-size: 12px; font-weight: 500;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    transition: all 0.3s;
+  }
+  .status-pill.connected { background: var(--success-light); border-color: #bbf7d0; color: var(--success); }
+  .status-pill.error { background: #fef2f2; border-color: #fecaca; color: var(--danger); }
+
+  .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+  .connected .dot { animation: blink 2s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.35} }
+
+  main { flex: 1; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+
+  .card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .card-label {
+    font-size: 10.5px; font-weight: 600;
+    letter-spacing: 1px; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 12px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .room-row { display: flex; gap: 8px; }
+
+  .room-input {
+    flex: 1;
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-family: 'DM Mono', monospace;
+    font-size: 18px; font-weight: 500;
+    letter-spacing: 6px; text-transform: uppercase; text-align: center;
+    color: var(--text); outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .room-input::placeholder { color: var(--border2); letter-spacing: 3px; font-size: 13px; }
+  .room-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.08); background: var(--white); }
+
+  .btn {
+    border: none; border-radius: 10px;
+    padding: 10px 18px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600; font-size: 14px;
+    cursor: pointer; transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .btn:active { transform: scale(0.96); }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-primary:hover { background: #1d4ed8; }
+
+  .btn-sm {
+    background: var(--bg); color: var(--text);
+    border: 1px solid var(--border);
+    font-size: 12.5px; padding: 7px 12px; border-radius: 8px;
+  }
+  .btn-sm:hover { border-color: var(--border2); }
+
+  .room-meta {
+    margin-top: 10px; font-size: 12.5px; color: var(--muted);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .device-count {
+    background: var(--accent-light); color: var(--accent);
+    border: 1px solid var(--accent-border);
+    border-radius: 20px; padding: 2px 8px;
+    font-size: 11px; font-weight: 600;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .server-toggle {
+    background: none; border: none;
+    font-family: 'DM Mono', monospace; font-size: 11px;
+    color: var(--muted); cursor: pointer;
+    padding: 0; margin-top: 10px;
+    display: flex; align-items: center; gap: 4px;
+    transition: color 0.2s;
+  }
+  .server-toggle:hover { color: var(--text); }
+
+  .server-panel { display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .server-input {
+    width: 100%;
+    background: var(--bg); border: 1.5px solid var(--border);
+    border-radius: 8px; padding: 9px 12px;
+    font-family: 'DM Mono', monospace; font-size: 11.5px;
+    color: var(--text); outline: none; margin-bottom: 8px;
+  }
+  .server-input:focus { border-color: var(--accent); }
+
+  /* Clipboard */
+  .received-tag {
+    display: none; align-items: center; gap: 5px;
+    font-size: 12px; color: var(--accent); font-weight: 500;
+    margin-bottom: 8px;
+  }
+  .received-tag.show { display: flex; }
+  .received-tag::before {
+    content: ''; display: block; width: 5px; height: 5px;
+    border-radius: 50%; background: var(--accent);
+  }
+
+  .clip-area {
+    background: var(--bg); border: 1.5px solid var(--border);
+    border-radius: 10px; padding: 12px;
+    display: flex; flex-direction: column;
+    transition: border-color 0.3s, background 0.3s;
+  }
+  .clip-area.flash { border-color: var(--accent); background: var(--accent-light); }
+
+  textarea#clipText {
+    background: transparent; border: none; resize: none;
+    font-family: 'DM Mono', monospace; font-size: 13px; line-height: 1.7;
+    color: var(--text); outline: none; min-height: 110px;
+  }
+  textarea#clipText::placeholder { color: var(--border2); }
+
+  .clip-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border);
+  }
+  .char-count { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; }
+  .clip-btns { display: flex; gap: 5px; }
+
+  .btn-send {
+    background: var(--accent); color: white;
+    width: 100%; padding: 12px; border-radius: 10px;
+    font-size: 15px; font-weight: 600; margin-top: 12px;
+    border: none; cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+    box-shadow: 0 2px 8px rgba(37,99,235,0.2);
+  }
+  .btn-send:active { transform: scale(0.98); background: #1d4ed8; }
+
+  /* History */
+  .history-empty { text-align: center; padding: 16px 0; color: var(--muted); font-size: 13px; }
+
+  .history-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border-radius: 9px; cursor: pointer;
+    transition: background 0.15s; border: 1px solid transparent;
+  }
+  .history-item:hover { background: var(--bg); border-color: var(--border); }
+  .history-item + .history-item { margin-top: 3px; }
+
+  .h-icon {
+    width: 26px; height: 26px; border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; flex-shrink: 0;
+    font-family: 'DM Mono', monospace;
+  }
+  .h-icon.sent { background: var(--accent-light); color: var(--accent); }
+  .h-icon.received { background: var(--success-light); color: var(--success); }
+
+  .h-text {
+    flex: 1; font-family: 'DM Mono', monospace; font-size: 12px;
+    color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .h-time { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; flex-shrink: 0; }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 18px; left: 50%;
+    transform: translateX(-50%) translateY(60px);
+    background: var(--text); color: white;
+    font-size: 13px; font-weight: 500;
+    padding: 9px 20px; border-radius: 100px;
+    transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
+    z-index: 999; white-space: nowrap;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.ok { background: var(--success); }
+  .toast.err { background: var(--danger); }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo">
+      <div class="logo-mark">📋</div>
+      <span class="logo-text">ClipSync</span>
+    </div>
+    <div class="status-pill" id="statusPill">
+      <span class="dot"></span>
+      <span id="statusText">offline</span>
+    </div>
+  </header>
+
+  <main>
+    <div class="card">
+      <div class="card-label">Room</div>
+      <div class="room-row">
+        <input class="room-input" id="roomInput" maxlength="6" placeholder="— — — —"
+          autocomplete="off" autocorrect="off" spellcheck="false"/>
+        <button class="btn btn-primary" onclick="joinRoom()">Connect</button>
+      </div>
+      <div class="room-meta" id="roomMeta">
+        <span>Enter your room code</span>
+      </div>
+      <button class="server-toggle" onclick="toggleServer()">⚙ server <span id="sArrow">›</span></button>
+      <div class="server-panel" id="serverPanel">
+        <input class="server-input" id="serverUrl" placeholder="wss://your-server.up.railway.app"/>
+        <button class="btn btn-sm" onclick="saveServer()">Save</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Clipboard</div>
+      <div class="received-tag" id="receivedTag">Received from laptop</div>
+      <div class="clip-area" id="clipArea">
+        <textarea id="clipText" placeholder="Copy on your laptop — appears here instantly.&#10;Or type here and tap Send ↑"></textarea>
+        <div class="clip-footer">
+          <span class="char-count" id="charCount">0</span>
+          <div class="clip-btns">
+            <button class="btn btn-sm" onclick="pasteFromPhone()">Paste</button>
+            <button class="btn btn-sm" onclick="copyToPhone()">Copy</button>
+            <button class="btn btn-sm" onclick="clearClip()">Clear</button>
+          </div>
+        </div>
+      </div>
+      <button class="btn-send" onclick="sendClip()">↑ Send to Laptop</button>
+    </div>
+
+    <div class="card">
+      <div class="card-label">History</div>
+      <div id="historyList"><div class="history-empty">No syncs yet</div></div>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let ws=null, currentRoom=null, connected=false;
+let serverUrl=localStorage.getItem('cs_server')||'wss://your-server.up.railway.app';
+let lastSent='', reconnectTimer=null, history=[];
+
+document.getElementById('serverUrl').value = serverUrl;
+const saved = localStorage.getItem('cs_room');
+if (saved) document.getElementById('roomInput').value = saved;
+
+document.getElementById('roomInput').addEventListener('input', e => e.target.value = e.target.value.toUpperCase());
+document.getElementById('roomInput').addEventListener('keyup', e => { if(e.key==='Enter') joinRoom(); });
+document.getElementById('clipText').addEventListener('input', updateCount);
+
+function updateCount() {
+  const l = document.getElementById('clipText').value.length;
+  document.getElementById('charCount').textContent = l + (l===1?' char':' chars');
+}
+
+function toggleServer() {
+  const p = document.getElementById('serverPanel'), a = document.getElementById('sArrow');
+  const open = p.style.display==='block';
+  p.style.display = open?'none':'block'; a.textContent = open?'›':'↓';
+}
+
+function saveServer() {
+  serverUrl = document.getElementById('serverUrl').value.trim();
+  localStorage.setItem('cs_server', serverUrl);
+  showToast('Saved', 'ok');
+}
+
+function joinRoom() {
+  const code = document.getElementById('roomInput').value.trim().toUpperCase();
+  if (code.length<4) { showToast('Code too short','err'); return; }
+  currentRoom=code; localStorage.setItem('cs_room', code); connectWS();
+}
+
+function connectWS() {
+  if(ws){ws.close();ws=null;} clearTimeout(reconnectTimer);
+  setStatus('connecting'); setMeta('Connecting…');
+  try { ws = new WebSocket(serverUrl); } catch(e) { setStatus('offline'); showToast('Bad server URL','err'); return; }
+  ws.onopen = () => ws.send(JSON.stringify({type:'join',room:currentRoom}));
+  ws.onmessage = (e) => {
+    const msg = JSON.parse(e.data);
+    if (msg.type==='joined') { connected=true; setStatus('connected'); setMeta(`Room <b>${currentRoom}</b>`,msg.devices); showToast(`Joined ${currentRoom}`,'ok'); }
+    if (msg.type==='device_joined'||msg.type==='device_left') { setMeta(`Room <b>${currentRoom}</b>`,msg.devices); showToast(msg.type==='device_joined'?'💻 Laptop connected':'Device left'); }
+    if (msg.type==='clipboard') receiveClip(msg.payload, msg.from||'laptop');
+  };
+  ws.onclose = () => { connected=false; setStatus('offline'); setMeta('Disconnected — retrying…'); reconnectTimer=setTimeout(()=>{if(currentRoom)connectWS();},4000); };
+  ws.onerror = () => { setStatus('error'); showToast('Connection failed','err'); };
+}
+
+function setStatus(s) {
+  const pill=document.getElementById('statusPill'), text=document.getElementById('statusText');
+  pill.className='status-pill';
+  const m={connected:['connected','live'],error:['error','error'],connecting:['','…'],offline:['','offline']};
+  const [cls,label]=m[s]||['','offline'];
+  if(cls) pill.classList.add(cls); text.textContent=label;
+}
+
+function setMeta(html, devices) {
+  const meta=document.getElementById('roomMeta');
+  const badge=devices!==undefined?`<span class="device-count">${devices} device${devices!==1?'s':''}</span>`:'';
+  meta.innerHTML=`<span>${html}</span>${badge}`;
+}
+
+function sendClip() {
+  const text=document.getElementById('clipText').value.trim();
+  if(!text){showToast('Nothing to send','err');return;}
+  if(!ws||ws.readyState!==1){showToast('Not connected','err');return;}
+  lastSent=text;
+  ws.send(JSON.stringify({type:'clipboard',room:currentRoom,payload:text,from:'phone'}));
+  addHistory(text,'sent'); showToast('Sent ↑','ok');
+}
+
+async function pasteFromPhone() {
+  try { const t=await navigator.clipboard.readText(); document.getElementById('clipText').value=t; updateCount(); showToast('Pasted'); }
+  catch { showToast('Allow clipboard in Chrome','err'); }
+}
+
+async function copyToPhone() {
+  const text=document.getElementById('clipText').value.trim();
+  if(!text){showToast('Nothing to copy','err');return;}
+  try { await navigator.clipboard.writeText(text); showToast('Copied','ok'); }
+  catch { showToast('Tap text first, then try','err'); }
+}
+
+function clearClip() { document.getElementById('clipText').value=''; updateCount(); }
+
+function receiveClip(text, from) {
+  document.getElementById('clipText').value=text; updateCount();
+  const area=document.getElementById('clipArea');
+  area.classList.add('flash'); setTimeout(()=>area.classList.remove('flash'),700);
+  const tag=document.getElementById('receivedTag');
+  tag.textContent=`Received from ${from}`; tag.classList.add('show');
+  setTimeout(()=>tag.classList.remove('show'),3000);
+  navigator.clipboard.writeText(text).catch(()=>{});
+  addHistory(text,'received'); showToast('↓ Received');
+}
+
+function addHistory(text, dir) {
+  history.unshift({text,dir,t:new Date()});
+  if(history.length>8) history.pop();
+  renderHistory();
+}
+
+function renderHistory() {
+  const list=document.getElementById('historyList');
+  if(!history.length){list.innerHTML='<div class="history-empty">No syncs yet</div>';return;}
+  list.innerHTML=history.map((h,i)=>{
+    const hhmm=h.t.toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'});
+    return `<div class="history-item" onclick="restore(${i})">
+      <div class="h-icon ${h.dir}">${h.dir==='sent'?'↑':'↓'}</div>
+      <span class="h-text">${esc(h.text)}</span>
+      <span class="h-time">${hhmm}</span>
+    </div>`;
+  }).join('');
+}
+
+function restore(i) { document.getElementById('clipText').value=history[i].text; updateCount(); }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+
+let toastT;
+function showToast(msg, type='') {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className=`toast show${type?' '+type:''}`;
+  clearTimeout(toastT); toastT=setTimeout(()=>t.className='toast',2000);
+}
+</script>
+</body>
+</html>
